@@ -2,64 +2,85 @@ export async function POST(request) {
   const { idea } = await request.json()
   
   try {
+    // 1. Queries más simples que sí matchean en Reddit
     const agentes = [
-      `"${idea}" problema`, `"${idea}" odio`, `"${idea}" frustrante`,
-      `"${idea}" uso`, `"${idea}" app para`, `"${idea}" herramienta`,
-      `"${idea}" pagar`, `"${idea}" precio`, `"${idea}" gratis vs pago`,
-      `"${idea}" alternativa`, `"${idea}" mejor que`, `"${idea}" vs`,
-      `"${idea}" no funciona`, `"${idea}" intenté`, `"${idea}" abandoné`,
-      `"${idea}" cuántos`, `"${idea}" gente usa`, `"${idea}" popular`,
-      `site:reddit.com/r/startups "${idea}"`,
-      `site:reddit.com/r/entrepreneur "${idea}"`,
-      `site:reddit.com/r/smallbusiness "${idea}"`,
-      `site:reddit.com/r/SideProject "${idea}"`,
-      `site:reddit.com/r/marketing "${idea}"`,
-      `site:reddit.com/r/sales "${idea}"`
+      `${idea}`,
+      `${idea} problem`,
+      `${idea} alternative`,
+      `${idea} startup`,
+      `${idea} app`,
+      `building ${idea}`,
+      `anyone use ${idea}`,
+      `${idea} review`
     ]
 
-    const promesasReddit = agentes.map(query => 
-      fetch(`https://www.reddit.com/search.json?q=${encodeURIComponent(query)}&limit=3&sort=relevance`, {
-        headers: { 'User-Agent': 'IdeaValidator/1.0' }
-      }).then(r => r.json()).catch(() => null)
+    console.log('Buscando:', idea)
+
+    // 2. Mejor User-Agent + delay para no ban
+    const promesasReddit = agentes.map((query, i) => 
+      new Promise(resolve => setTimeout(() => {
+        fetch(`https://www.reddit.com/search.json?q=${encodeURIComponent(query)}&limit=5&sort=top&t=all`, {
+          headers: { 
+            'User-Agent': 'Mozilla/5.0 (compatible; IdeaValidator/1.0; +https://tudominio.com)'
+          }
+        })
+       .then(r => {
+          console.log(`Agente ${i} status:`, r.status)
+          return r.json()
+        })
+       .then(resolve)
+       .catch(err => {
+          console.log(`Agente ${i} error:`, err.message)
+          resolve(null)
+        })
+      }, i * 200)) // 200ms entre requests
     )
 
     const resultados = await Promise.all(promesasReddit)
     
+    // 3. Extraer posts con más datos
     const todosLosPosts = []
-    resultados.forEach(data => {
-      if (data?.data?.children) {
+    resultados.forEach((data, i) => {
+      if (data?.data?.children?.length > 0) {
+        console.log(`Agente ${i} encontró:`, data.data.children.length)
         data.data.children.forEach(post => {
-          todosLosPosts.push({
-            titulo: post.data.title,
-            subreddit: post.data.subreddit,
-            upvotes: post.data.ups,
-            comentarios: post.data.num_comments
-          })
+          if (post.data.title && post.data.ups > 0) { // Filtrar posts vacíos
+            todosLosPosts.push({
+              titulo: post.data.title,
+              subreddit: post.data.subreddit,
+              upvotes: post.data.ups,
+              comentarios: post.data.num_comments,
+              url: `https://reddit.com${post.data.permalink}`
+            })
+          }
         })
       }
     })
 
     const postsUnicos = [...new Map(todosLosPosts.map(p => [p.titulo, p])).values()].slice(0, 30)
     
+    console.log('Total posts únicos:', postsUnicos.length)
+
+    // 4. Si no hay posts, avisarle a Groq que improvise
     const contextoReddit = postsUnicos.length > 0 
-     ? postsUnicos.map(p => `r/${p.subreddit} [${p.upvotes}↑]: ${p.titulo}`).join('\n')
-      : 'No se encontraron posts relevantes en Reddit.'
+    ? postsUnicos.map(p => `r/${p.subreddit} [${p.upvotes}↑ ${p.comentarios} comments]: ${p.titulo}`).join('\n')
+      : `No se encontraron posts específicos sobre "${idea}" en Reddit. Analizá basándote en tendencias generales de startups y tu conocimiento del mercado.`
 
     const systemPrompt = `
 Sos un inversor experto en startups.
 Sos directo, crítico y basado en datos.
 No das consejos genéricos.
-Analizaste Reddit con 24 agentes de investigación.
+Si no hay datos de Reddit, usa tu conocimiento general pero aclará que es estimación sin datos.
 `;
 
     const userPrompt = `
 Idea: ${idea}
 
-EVIDENCIA DE 24 AGENTES EN REDDIT:
+EVIDENCIA DE REDDIT:
 ${contextoReddit}
 
 Posts analizados: ${postsUnicos.length}
-Subreddits: ${[...new Set(postsUnicos.map(p => p.subreddit))].join(', ')}
+Timestamp: ${new Date().toISOString()}
 
 Analizá esta idea y devolvé SOLO en este formato:
 
@@ -67,10 +88,11 @@ Analizá esta idea y devolvé SOLO en este formato:
 - Score: X/10
 - Riesgo: Bajo / Medio / Alto
 - Tipo: (innovadora / saturada / nicho / tendencia)
+- Datos usados: ${postsUnicos.length > 0? 'Reales de Reddit' : 'Estimación sin datos de Reddit'}
 
 📊 Evidencia de mercado
-- Qué ya existe similar según Reddit
-- Qué dicen los usuarios (problemas reales con quotes si hay)
+- Qué ya existe similar
+- Qué dicen los usuarios (si hay posts) o qué dirían típicamente
 
 ⚠️ Problemas críticos
 - Punto 1
@@ -84,7 +106,7 @@ Analizá esta idea y devolvé SOLO en este formato:
 
 🚀 Recomendación final
 - (Construir / No construir / Pivotear)
-- Explicación corta y directa basada en los ${postsUnicos.length} posts encontrados
+- Explicación corta y directa
 `;
 
     const groqRes = await fetch('https://api.groq.com/openai/v1/chat/completions', {
@@ -94,12 +116,12 @@ Analizá esta idea y devolvé SOLO en este formato:
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({
-        model: 'llama-3.3-70b-versatile', // ACTUALIZADO
+        model: 'llama-3.3-70b-versatile',
         messages: [
           { role: 'system', content: systemPrompt },
           { role: 'user', content: userPrompt }
         ],
-        temperature: 0.3
+        temperature: 0.7 // Más variedad
       })
     })
     
@@ -113,12 +135,14 @@ Analizá esta idea y devolvé SOLO en este formato:
     
     return Response.json({ 
       veredicto,
-      agentes_usados: 24,
+      agentes_usados: 8,
       posts_analizados: postsUnicos.length,
-      fuentes: [...new Set(postsUnicos.map(p => `r/${p.subreddit}`))]
+      fuentes: [...new Set(postsUnicos.map(p => `r/${p.subreddit}`))],
+      debug: postsUnicos.length === 0? 'No se encontraron posts en Reddit' : 'OK'
     })
     
   } catch (error) {
+    console.error('Error:', error)
     return Response.json({ error: error.message }, { status: 500 })
   }
 }
