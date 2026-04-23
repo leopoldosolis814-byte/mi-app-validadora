@@ -6,109 +6,108 @@ const IMAGENES_FONDO = [
   'https://res.cloudinary.com/ds2udm1nc/image/upload/v1776915709/Copilot_20260423_000431_k2gk4n.png',
   'https://res.cloudinary.com/ds2udm1nc/image/upload/v1776915710/Copilot_20260423_000306_xucvfd.png',
   'https://res.cloudinary.com/ds2udm1nc/image/upload/v1776915712/Copilot_20260423_000714_yreyre.png',
-] [cite: 1]
+]
 
-const TITULO_PALABRAS = ['¿Tu', 'idea', 'tiene', 'futuro?'] [cite: 1]
+const TITULO_PALABRAS = ['¿Tu', 'idea', 'tiene', 'futuro?']
 
 export default function Home() {
-  const [idea, setIdea] = useState('') [cite: 1]
-  const [veredicto, setVeredicto] = useState('') [cite: 1]
-  const [cargando, setCargando] = useState(false) [cite: 1]
-  const [fuentes, setFuentes] = useState<string[]>([]) [cite: 1]
-  const [postsAnalizados, setPostsAnalizados] = useState(0) [cite: 1]
-  const [sugerencias, setSugerencias] = useState<any[]>([]) [cite: 1]
-  const [cargandoSugerencias, setCargandoSugerencias] = useState(false) [cite: 1]
-  const [indiceImagen, setIndiceImagen] = useState(0) [cite: 1]
-  const [prevIndice, setPrevIndice] = useState<number | null>(null) [cite: 1, 2]
-  const [transitioning, setTransitioning] = useState(false) [cite: 2]
-  const [tituloVisible, setTituloVisible] = useState(false) [cite: 2]
-  const intervalRef = useRef<NodeJS.Timeout | null>(null) [cite: 2]
+  const [idea, setIdea] = useState('')
+  const [veredicto, setVeredicto] = useState('')
+  const [cargando, setCargando] = useState(false)
+  const [fuentes, setFuentes] = useState<string[]>([])
+  const [postsAnalizados, setPostsAnalizados] = useState(0)
+  const [sugerencias, setSugerencias] = useState<any[]>([])
+  const [cargandoSugerencias, setCargandoSugerencias] = useState(false)
+  const [indiceImagen, setIndiceImagen] = useState(0)
+  const [prevIndice, setPrevIndice] = useState<number | null>(null)
+  const [transitioning, setTransitioning] = useState(false)
+  const [tituloVisible, setTituloVisible] = useState(false)
+  const intervalRef = useRef<NodeJS.Timeout | null>(null)
+
+  // --- CONFIGURACIÓN FORMSPREE ---
+  // Reemplaza 'TU_ID_DE_FORMSPREE' con el ID que te da Formspree
+  const FORMSPREE_ID = "TU_ID_DE_FORMSPREE" 
 
   useEffect(() => {
-    const t = setTimeout(() => setTituloVisible(true), 200) [cite: 3]
-    return () => clearTimeout(t) [cite: 3]
+    const t = setTimeout(() => setTituloVisible(true), 200)
+    return () => clearTimeout(t)
   }, [])
 
   const goToSlide = (next: number) => {
-    if (transitioning) return [cite: 3]
-    setTransitioning(true) [cite: 3]
-    setPrevIndice(indiceImagen) [cite: 3]
-    setIndiceImagen(next) [cite: 3]
+    if (transitioning) return
+    setTransitioning(true)
+    setPrevIndice(indiceImagen)
+    setIndiceImagen(next)
     setTimeout(() => {
-      setPrevIndice(null) [cite: 3]
-      setTransitioning(false) [cite: 3]
-    }, 1100) [cite: 3]
+      setPrevIndice(null)
+      setTransitioning(false)
+    }, 1100)
   }
 
+  // Carrusel Automático [cite: 4, 5]
   useEffect(() => {
     intervalRef.current = setInterval(() => {
       setIndiceImagen(prev => {
-        const next = (prev + 1) % IMAGENES_FONDO.length [cite: 4]
-        goToSlide(next) [cite: 4]
-        return prev [cite: 4]
+        const next = (prev + 1) % IMAGENES_FONDO.length
+        goToSlide(next)
+        return prev
       })
-    }, 6000) [cite: 4]
-    return () => { if (intervalRef.current) clearInterval(intervalRef.current) } [cite: 4]
+    }, 6000)
+    return () => { if (intervalRef.current) clearInterval(intervalRef.current) }
   }, [transitioning])
 
   const handleGoTo = (i: number) => {
-    if (i === indiceImagen || transitioning) return [cite: 5, 6]
-    goToSlide(i) [cite: 6]
-    if (intervalRef.current) clearInterval(intervalRef.current) [cite: 4]
-    intervalRef.current = setInterval(() => {
-      setIndiceImagen(prev => {
-        const next = (prev + 1) % IMAGENES_FONDO.length [cite: 5]
-        goToSlide(next) [cite: 5]
-        return prev [cite: 5]
-      })
-    }, 6000) [cite: 5]
+    if (i === indiceImagen || transitioning) return
+    goToSlide(i)
   }
 
   const analizarIdea = async () => {
-    if (!idea.trim()) return [cite: 6]
-    setCargando(true) [cite: 6]
-    setVeredicto('') [cite: 6]
-    setFuentes([]) [cite: 6]
-    setPostsAnalizados(0) [cite: 6]
+    if (!idea.trim()) return
+    setCargando(true)
+    
     try {
+      // Enviar a Formspree (opcional, para guardar qué ideas busca la gente)
+      fetch(`https://formspree.io/f/${FORMSPREE_ID}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ idea_analizada: idea })
+      }).catch(err => console.log("Formspree error silent fail", err))
+
+      // Análisis original [cite: 7]
       const res = await fetch('/api/analizar', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ idea }) [cite: 6]
+        body: JSON.stringify({ idea })
       })
-      const data = await res.json() [cite: 7]
+      const data = await res.json()
       if (data.error) {
-        setVeredicto(`Error: ${data.error}`) [cite: 7]
+        setVeredicto(`Error: ${data.error}`)
       } else {
-        setVeredicto(data.veredicto) [cite: 7]
-        setFuentes(data.fuentes || []) [cite: 7]
-        setPostsAnalizados(data.posts_analizados || 0) [cite: 7]
+        setVeredicto(data.veredicto)
+        setFuentes(data.fuentes || [])
+        setPostsAnalizados(data.posts_analizados || 0)
       }
     } catch {
-      setVeredicto('Error de conexión. Revisá tu internet.') [cite: 7]
+      setVeredicto('Error de conexión. Revisá tu internet.')
     }
-    setCargando(false) [cite: 7]
+    setCargando(false)
   }
 
   const sugerirIdeas = async () => {
-    setCargandoSugerencias(true) [cite: 8]
-    setSugerencias([]) [cite: 8]
+    setCargandoSugerencias(true)
+    setSugerencias([])
     try {
       const res = await fetch('/api/sugerir', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ idea }) [cite: 8]
+        body: JSON.stringify({ idea })
       })
-      const data = await res.json() [cite: 8]
-      if (data.error) {
-        alert('Error al sugerir: ' + data.error) [cite: 8]
-      } else {
-        setSugerencias(data.ideas || []) [cite: 9, 10]
-      }
+      const data = await res.json()
+      setSugerencias(data.ideas || [])
     } catch {
-      alert('Error de conexión') [cite: 10]
+      alert('Error de conexión')
     }
-    setCargandoSugerencias(false) [cite: 10]
+    setCargandoSugerencias(false)
   }
 
   return (
@@ -117,187 +116,147 @@ export default function Home() {
         @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&family=Plus+Jakarta+Sans:wght@300;400;600;700&display=swap');
 
         :root {
-          --primary: #6366F1; /* Violeta Eléctrico */
-          --secondary: #F43F5E; /* Coral */
-          --accent: #10B981; /* Esmeralda */
-          --bg-soft: #F8FAFC;
-          --glass-bg: rgba(255, 255, 255, 0.85);
-          --glass-border: rgba(255, 255, 255, 0.4);
-          --text-main: #1E293B;
-          --text-muted: #64748B;
-        } [cite: 11]
+          --primary: #6366F1;
+          --secondary: #F43F5E;
+          --accent: #10B981;
+          --glass: rgba(255, 255, 255, 0.9);
+          --text: #1E293B;
+        }
 
-        body {
-          background: #EEF2FF;
-          font-family: 'Plus Jakarta Sans', sans-serif;
-          color: var(--text-main);
-          -webkit-font-smoothing: antialiased;
-        } [cite: 12]
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: 'Plus Jakarta Sans', sans-serif; background: #f0f2f5; color: var(--text); }
 
-        .carousel-track { position: fixed; inset: 0; z-index: 0; } [cite: 13, 14]
-        .slide { position: absolute; inset: 0; overflow: hidden; } [cite: 14, 15]
-        .slide img { width: 100%; height: 100%; object-fit: cover; } [cite: 15, 16]
-        
-        .slide-active img { animation: zoomIn 8s ease-out forwards; } [cite: 17]
-        @keyframes zoomIn { from { transform: scale(1.15); } to { transform: scale(1); } } [cite: 18, 19]
+        .carousel-container { position: fixed; inset: 0; z-index: 0; }
+        .slide { position: absolute; inset: 0; opacity: 0; transition: opacity 1.1s ease-in-out; }
+        .slide.active { opacity: 1; z-index: 2; }
+        .slide img { width: 100%; height: 100%; object-fit: cover; filter: brightness(0.9); }
 
-        .overlay-vibrant {
-          position: absolute; inset: 0;
-          background: linear-gradient(135deg, rgba(99, 102, 241, 0.15) 0%, rgba(244, 63, 94, 0.1) 100%);
-          backdrop-filter: saturate(1.2);
-        } [cite: 27, 28]
+        .main-overlay {
+          position: absolute; inset: 0; z-index: 3;
+          background: linear-gradient(135deg, rgba(99,102,241,0.2) 0%, rgba(244,63,94,0.1) 100%);
+          backdrop-filter: blur(2px);
+        }
 
-        .card-glass {
-          background: var(--glass-bg);
-          backdrop-filter: blur(20px);
-          border: 1px solid var(--glass-border);
-          border-radius: 24px;
-          box-shadow: 0 20px 40px rgba(0,0,0,0.08);
-          position: relative;
-          overflow: hidden;
-        } [cite: 50, 51]
+        .content-wrapper {
+          position: relative; z-index: 10; min-height: 100vh;
+          display: flex; align-items: center; justify-content: center; padding: 20px;
+        }
 
-        .titulo-vibrant {
-          font-family: 'Outfit', sans-serif;
-          font-weight: 800;
+        .glass-card {
+          background: var(--glass);
+          backdrop-filter: blur(15px);
+          border: 1px solid rgba(255,255,255,0.4);
+          border-radius: 32px;
+          padding: 40px;
+          width: 100%; maxWidth: 550px;
+          box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.15);
+          text-align: center;
+        }
+
+        .title-gradient {
+          font-family: 'Outfit', sans-serif; font-weight: 800;
           background: linear-gradient(to right, var(--primary), var(--secondary));
-          -webkit-background-clip: text;
-          -webkit-text-fill-color: transparent;
-          filter: drop-shadow(0 2px 4px rgba(0,0,0,0.1));
-        } [cite: 45, 46, 111]
+          -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+          font-size: clamp(32px, 8vw, 56px); margin-bottom: 10px;
+        }
 
-        .input-fun {
-          width: 100%;
-          background: white;
-          border: 2px solid #E2E8F0;
-          border-radius: 16px;
-          padding: 16px;
-          font-size: 16px;
-          transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-        } [cite: 54, 55, 56]
-        .input-fun:focus { border-color: var(--primary); transform: translateY(-2px); box-shadow: 0 8px 20px rgba(99,102,241,0.1); } [cite: 58]
+        .input-premium {
+          width: 100%; background: white; border: 2px solid #E2E8F0;
+          border-radius: 18px; padding: 18px; font-size: 16px; margin: 20px 0;
+          transition: all 0.3s; resize: none; outline: none;
+        }
+        .input-premium:focus { border-color: var(--primary); box-shadow: 0 0 0 4px rgba(99,102,241,0.1); }
 
-        .btn-vibrant {
-          background: linear-gradient(135deg, var(--primary) 0%, #4F46E5 100%);
-          color: white;
-          border: none;
-          border-radius: 16px;
-          padding: 16px;
-          font-weight: 700;
-          cursor: pointer;
-          transition: all 0.3s;
-          box-shadow: 0 10px 15px -3px rgba(99,102,241,0.3);
-        } [cite: 64, 65, 66]
-        .btn-vibrant:hover:not(:disabled) { transform: scale(1.02); box-shadow: 0 20px 25px -5px rgba(99,102,241,0.4); } [cite: 70, 71]
+        .btn-main {
+          width: 100%; background: linear-gradient(135deg, var(--primary), #4F46E5);
+          color: white; border: none; border-radius: 18px; padding: 18px;
+          font-size: 16px; font-weight: 700; cursor: pointer; transition: 0.3s;
+        }
+        .btn-main:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 10px 20px rgba(99,102,241,0.3); }
 
-        .btn-pivot {
-          background: white;
-          border: 2px solid #E2E8F0;
-          color: var(--primary);
-          border-radius: 16px;
-          padding: 12px;
-          font-weight: 600;
-          transition: all 0.3s;
-        } [cite: 59, 60, 61]
-        .btn-pivot:hover { border-color: var(--primary); background: #F5F3FF; } [cite: 62]
+        .btn-ghost {
+          background: none; border: 2px solid #E2E8F0; color: var(--primary);
+          border-radius: 18px; padding: 12px; width: 100%; font-weight: 600;
+          cursor: pointer; margin-bottom: 10px; transition: 0.3s;
+        }
+        .btn-ghost:hover { background: #f5f3ff; border-color: var(--primary); }
 
-        .resultado-anim {
-          background: #F8FAFC;
-          border-radius: 20px;
-          padding: 20px;
-          border: 1px solid #E2E8F0;
-          animation: popIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-        } [cite: 83, 84]
-        @keyframes popIn { from { transform: scale(0.9); opacity: 0; } to { transform: scale(1); opacity: 1; } } [cite: 87, 88]
+        .result-box {
+          margin-top: 25px; padding: 20px; background: #F8FAFC;
+          border-radius: 20px; border: 1px solid #E2E8F0; text-align: left;
+          animation: slideUp 0.5s ease-out;
+        }
+        @keyframes slideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
 
-        .dot-vibrant {
-          height: 8px; width: 8px;
-          border-radius: 4px;
-          background: #CBD5E1;
-          transition: all 0.4s ease;
-        } [cite: 97, 98]
-        .dot-vibrant.active { width: 24px; background: var(--primary); } [cite: 99, 134]
+        .dot {
+          width: 8px; height: 8px; border-radius: 50%; background: #CBD5E1;
+          border: none; cursor: pointer; transition: 0.3s;
+        }
+        .dot.active { width: 24px; border-radius: 4px; background: var(--primary); }
       `}</style>
 
-      <main style={{ minHeight: '100vh', position: 'relative', overflow: 'hidden' }}>
-        <div className="carousel-track">
+      <main>
+        {/* CARRUSEL [cite: 104, 105] */}
+        <div className="carousel-container">
           {IMAGENES_FONDO.map((url, i) => (
-            (i === indiceImagen || (i === prevIndice && transitioning)) && (
-              <div key={i} className={`slide ${i === indiceImagen ? 'slide-active slide-enter' : 'slide-exit'}`}>
-                <img src={url} alt="" style={{ opacity: 0.6 }} />
-              </div>
-            ) [cite: 104, 105]
+            <div key={i} className={`slide ${i === indiceImagen ? 'active' : ''}`}>
+              <img src={url} alt="" />
+            </div>
           ))}
-          <div className="overlay-vibrant" /> [cite: 105]
+          <div className="main-overlay" />
         </div>
 
-        <div style={{ position: 'relative', zIndex: 10, display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '100vh', padding: '20px' }}>
-          <div style={{ maxWidth: '540px', width: '100%', textAlign: 'center' }}>
-            
-            <div style={{ display: 'inline-block', padding: '6px 16px', background: 'white', borderRadius: '100px', marginBottom: '24px', boxShadow: '0 4px 10px rgba(0,0,0,0.05)' }}>
-              <span style={{ fontSize: '12px', fontWeight: 700, color: 'var(--primary)', letterSpacing: '0.05em' }}>✨ VALIDACIÓN CON IA</span> [cite: 108, 109]
-            </div>
+        <div className="content-wrapper">
+          <div className="glass-card">
+            <h1 className="title-gradient">¿Tu idea tiene futuro?</h1>
+            <p style={{ color: '#64748B', fontWeight: 500 }}>Validación premium con 24 agentes de IA analizando Reddit.</p>
 
-            <h1 className="titulo-vibrant" style={{ fontSize: 'clamp(40px, 8vw, 64px)', lineHeight: 1.1, marginBottom: '16px' }}>
-              ¿Tu idea tiene <br/> futuro?
-            </h1> [cite: 110, 111]
+            <textarea
+              className="input-premium"
+              placeholder="Ej: Una app para paseadores de perros con GPS..."
+              value={idea}
+              onChange={(e) => setIdea(e.target.value)}
+              rows={3}
+            />
 
-            <p style={{ color: 'var(--text-muted)', fontSize: '16px', marginBottom: '32px', fontWeight: 500 }}>
-              24 agentes exploran Reddit por vos. 🚀
-            </p> [cite: 113, 114]
+            <button onClick={sugerirIdeas} disabled={cargandoSugerencias} className="btn-ghost">
+              {cargandoSugerencias ? '✨ Generando...' : '💡 Sugerir variaciones'}
+            </button>
 
-            <div className="card-glass" style={{ padding: '32px' }}>
-              <textarea
-                value={idea}
-                onChange={(e) => setIdea(e.target.value)}
-                placeholder="Describe tu app mágica aquí..."
-                className="input-fun"
-                rows={3}
-              /> [cite: 115, 116]
-
-              <button onClick={sugerirIdeas} disabled={cargandoSugerencias} className="btn-pivot" style={{ width: '100%', marginTop: '12px' }}>
-                {cargandoSugerencias ? 'Buscando inspiración...' : '💡 Explorar 3 variaciones'}
-              </button> [cite: 117, 118, 119]
-
-              {sugerencias.length > 0 && (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginTop: '16px' }}>
-                  {sugerencias.map((s, i) => (
-                    <button key={i} onClick={() => { setIdea(`${s.titulo}: ${s.problema}`); setSugerencias([]) }} 
-                      style={{ padding: '12px', textAlign: 'left', borderRadius: '12px', border: '1px solid #E2E8F0', background: 'white', cursor: 'pointer' }}>
-                      <div style={{ fontWeight: 700, color: 'var(--primary)', fontSize: '14px' }}>{s.titulo}</div>
-                      <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>{s.problema}</div>
-                    </button> [cite: 121, 122, 123]
-                  ))}
-                </div>
-              )}
-
-              <button onClick={analizarIdea} disabled={cargando || !idea.trim()} className="btn-vibrant" style={{ width: '100%', marginTop: '20px' }}>
-                {cargando ? '🕵️‍♂️ Analizando la red...' : '¡Validar mi idea ahora!'}
-              </button> [cite: 124, 125, 126]
-
-              {veredicto && (
-                <div className="resultado-anim" style={{ marginTop: '24px', textAlign: 'left' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '12px' }}>
-                    <span style={{ fontWeight: 800, fontSize: '12px', color: 'var(--secondary)' }}>EL VEREDICTO</span>
-                    <span style={{ fontSize: '11px', background: '#E0F2FE', color: '#0369A1', padding: '2px 8px', borderRadius: '4px' }}>{postsAnalizados} posts</span> [cite: 127]
+            {sugerencias.length > 0 && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '15px' }}>
+                {sugerencias.map((s, i) => (
+                  <div key={i} onClick={() => setIdea(`${s.titulo}: ${s.problema}`)} 
+                    style={{ cursor: 'pointer', padding: '10px', background: 'white', borderRadius: '12px', border: '1px solid #E2E8F0', fontSize: '13px' }}>
+                    <strong>{s.titulo}</strong>
                   </div>
-                  <pre style={{ whiteSpace: 'pre-wrap', fontSize: '14px', lineHeight: 1.6, fontFamily: 'inherit' }}>{veredicto}</pre> [cite: 128]
+                ))}
+              </div>
+            )}
+
+            <button className="btn-main" onClick={analizarIdea} disabled={cargando || !idea.trim()}>
+              {cargando ? '🕵️‍♂️ Investigando en Reddit...' : '→ Validar ahora'}
+            </button>
+
+            {veredicto && (
+              <div className="result-box">
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '10px' }}>
+                  <span style={{ fontSize: '12px', fontWeight: 800, color: var(--secondary) }}>ANÁLISIS FINAL</span>
+                  <span style={{ fontSize: '11px', color: '#94A3B8' }}>{postsAnalizados} fuentes</span>
                 </div>
-              )}
-            </div>
+                <div style={{ fontSize: '14px', lineHeight: '1.6', whiteSpace: 'pre-wrap' }}>{veredicto}</div>
+              </div>
+            )}
 
-            <div style={{ display: 'flex', justifyContent: 'center', gap: '8px', marginTop: '32px' }}>
+            {/* DOTS [cite: 132, 133] */}
+            <div style={{ display: 'flex', justifyContent: 'center', gap: '8px', marginTop: '30px' }}>
               {IMAGENES_FONDO.map((_, i) => (
-                <button key={i} onClick={() => handleGoTo(i)} className={`dot-vibrant ${i === indiceImagen ? 'active' : ''}`} style={{ border: 'none', cursor: 'pointer' }} />
-              ))} [cite: 132, 133, 134]
+                <button key={i} className={`dot ${i === indiceImagen ? 'active' : ''}`} onClick={() => handleGoTo(i)} />
+              ))}
             </div>
-
-            <p style={{ marginTop: '40px', fontSize: '11px', fontWeight: 700, color: 'rgba(0,0,0,0.3)', letterSpacing: '0.1em' }}>
-              GROQ • REDDIT API • NEXT.JS
-            </p> [cite: 135]
           </div>
         </div>
       </main>
     </>
   )
-          }
+            }
