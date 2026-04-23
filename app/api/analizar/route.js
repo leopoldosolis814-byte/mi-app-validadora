@@ -2,7 +2,6 @@ export async function POST(request) {
   const { idea } = await request.json()
   
   try {
-    // 1. 24 agentes buscan en Reddit en paralelo
     const agentes = [
       `"${idea}" problema`, `"${idea}" odio`, `"${idea}" frustrante`,
       `"${idea}" uso`, `"${idea}" app para`, `"${idea}" herramienta`,
@@ -26,7 +25,6 @@ export async function POST(request) {
 
     const resultados = await Promise.all(promesasReddit)
     
-    // 2. Extraer posts únicos
     const todosLosPosts = []
     resultados.forEach(data => {
       if (data?.data?.children) {
@@ -35,8 +33,7 @@ export async function POST(request) {
             titulo: post.data.title,
             subreddit: post.data.subreddit,
             upvotes: post.data.ups,
-            comentarios: post.data.num_comments,
-            texto: post.data.selftext?.slice(0, 150) || ''
+            comentarios: post.data.num_comments
           })
         })
       }
@@ -45,10 +42,9 @@ export async function POST(request) {
     const postsUnicos = [...new Map(todosLosPosts.map(p => [p.titulo, p])).values()].slice(0, 30)
     
     const contextoReddit = postsUnicos.length > 0 
-      ? postsUnicos.map(p => `r/${p.subreddit} [${p.upvotes}↑ ${p.comentarios} comments]: ${p.titulo}`).join('\n')
+     ? postsUnicos.map(p => `r/${p.subreddit} [${p.upvotes}↑]: ${p.titulo}`).join('\n')
       : 'No se encontraron posts relevantes en Reddit.'
 
-    // 3. Tu systemPrompt + userPrompt con datos de 24 agentes
     const systemPrompt = `
 Sos un inversor experto en startups.
 Sos directo, crítico y basado en datos.
@@ -91,7 +87,6 @@ Analizá esta idea y devolvé SOLO en este formato:
 - Explicación corta y directa basada en los ${postsUnicos.length} posts encontrados
 `;
 
-    // 4. Llamar a Groq con tu prompt
     const groqRes = await fetch('https://api.groq.com/openai/v1/chat/completions', {
       method: 'POST',
       headers: {
@@ -99,12 +94,12 @@ Analizá esta idea y devolvé SOLO en este formato:
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({
-        model: 'llama-3.1-70b-versatile',
+        model: 'llama-3.3-70b-versatile', // ACTUALIZADO
         messages: [
           { role: 'system', content: systemPrompt },
           { role: 'user', content: userPrompt }
         ],
-        temperature: 0.3 // Más determinista para números
+        temperature: 0.3
       })
     })
     
@@ -126,4 +121,4 @@ Analizá esta idea y devolvé SOLO en este formato:
   } catch (error) {
     return Response.json({ error: error.message }, { status: 500 })
   }
-  }
+}
