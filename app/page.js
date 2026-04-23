@@ -76,22 +76,27 @@ export default function Home() {
   }
 
   return (
-    <main className="min-h-screen text-white relative overflow-hidden">
+    <main className="min-h-screen text-white relative overflow-hidden bg-slate-950">
+      {/* Carrusel de fondo - imagen completa sin crop */}
       {IMAGENES_FONDO.map((url, i) => (
         <div
           key={i}
-          className="absolute inset-0 transition-opacity duration-1000 ease-in-out"
+          className="absolute inset-0 transition-opacity duration-1000 ease-in-out flex items-center justify-center"
           style={{
-            backgroundImage: `url(${url})`,
-            backgroundSize: 'cover',
-            backgroundPosition: 'center',
             opacity: i === indiceImagen ? 1 : 0,
             zIndex: -2
           }}
-        />
+        >
+          <img 
+            src={url} 
+            alt="" 
+            className="w-full h-full object-contain"
+          />
+        </div>
       ))}
       
-      <div className="absolute inset-0 bg-slate-950/85 backdrop-blur-sm" style={{ zIndex: -1 }} />
+      {/* Overlay oscuro más fuerte para que se lea */}
+      <div className="absolute inset-0 bg-slate-950/90" style={{ zIndex: -1 }} />
 
       <div className="min-h-screen flex items-center justify-center p-6 relative z-10">
         <div className="max-w-2xl w-full">
@@ -104,11 +109,11 @@ export default function Home() {
             </p>
           </div>
 
-          <div className="bg-slate-900/70 backdrop-blur-xl border border-slate-700/50 rounded-2xl p-6 shadow-2xl">
+          <div className="bg-slate-900/80 backdrop-blur-xl border border-slate-700/50 rounded-2xl p-6 shadow-2xl">
             <textarea
               value={idea}
               onChange={(e) => setIdea(e.target.value)}
-              placeholder="Ej: app para alquilar bicis eléctricas en Corrientes"
+              placeholder="Ej: app para alquilar bicis eléctricas por hora"
               className="w-full bg-slate-800/60 border border-slate-700 rounded-xl p-4 text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500 transition resize-none"
               rows={3}
             />
@@ -203,10 +208,10 @@ export default function Home() {
           </div>
 
           <p className="text-center text-slate-500 text-xs mt-6">
-            Powered by Groq + Reddit • Hecho en Corrientes 🇦🇷
+            Powered by Groq + Reddit
           </p>
         </div>
       </div>
     </main>
   )
-                     }
+              }
