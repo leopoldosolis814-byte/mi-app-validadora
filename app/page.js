@@ -21,6 +21,7 @@ export default function Home() {
   const [cargandoSugerencias, setCargandoSugerencias] = useState(false)
   const [indiceImagen, setIndiceImagen] = useState(0)
 
+  // Carrusel automático cada 5 segundos
   useEffect(() => {
     const interval = setInterval(() => {
       setIndiceImagen(prev => (prev + 1) % IMAGENES_FONDO.length)
@@ -77,26 +78,20 @@ export default function Home() {
 
   return (
     <main className="min-h-screen text-white relative overflow-hidden bg-slate-950">
-      {/* Carrusel de fondo - imagen completa sin crop */}
-      {IMAGENES_FONDO.map((url, i) => (
-        <div
-          key={i}
-          className="absolute inset-0 transition-opacity duration-1000 ease-in-out flex items-center justify-center"
-          style={{
-            opacity: i === indiceImagen ? 1 : 0,
-            zIndex: -2
-          }}
-        >
-          <img 
-            src={url} 
-            alt="" 
-            className="w-full h-full object-contain"
+      {/* Carrusel - imagen completa con object-contain */}
+      <div className="fixed inset-0 -z-10">
+        {IMAGENES_FONDO.map((url, i) => (
+          <img
+            key={i}
+            src={url}
+            alt=""
+            className="absolute inset-0 w-full h-full object-contain transition-opacity duration-1000 ease-in-out"
+            style={{ opacity: i === indiceImagen ? 1 : 0 }}
           />
-        </div>
-      ))}
-      
-      {/* Overlay oscuro más fuerte para que se lea */}
-      <div className="absolute inset-0 bg-slate-950/90" style={{ zIndex: -1 }} />
+        ))}
+        {/* Overlay para que se lea el texto */}
+        <div className="absolute inset-0 bg-slate-950/85" />
+      </div>
 
       <div className="min-h-screen flex items-center justify-center p-6 relative z-10">
         <div className="max-w-2xl w-full">
@@ -214,4 +209,4 @@ export default function Home() {
       </div>
     </main>
   )
-              }
+          }
