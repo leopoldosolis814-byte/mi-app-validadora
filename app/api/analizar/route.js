@@ -1,12 +1,27 @@
-import { NextResponse } from 'next/server'
-import { buscarEnReddit } from '@/lib/reddit'
-import { analizarConIA } from '@/lib/ai'
-export async function POST(req) {
+export async function POST(request) {
+  const { idea } = await request.json()
+  
   try {
-    const { idea } = await req.json()
-    if (!idea) return NextResponse.json({ error: 'Falta la idea' }, { status: 400 })
-    const posts = await buscarEnReddit(idea)
-    const resultado = await analizarConIA(idea, posts)
-    return NextResponse.json(resultado)
-  } catch (e) { return NextResponse.json({ error: e.message }, { status: 500 }) }
+    const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${process.env.GROQ_API_KEY}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        model: 'llama-3.1-8b-instant',
+        messages: [{
+          role: 'user',
+          content: `Analiza esta idea de negocio en 3 puntos cortos: "${idea}". Da: 1.Veredicto, 2.Riesgos, 3.Siguiente paso.`
+        }]
+      })
+    })
+    
+    const data = await res.json()
+    const veredicto = data.choices[0].message.content
+    
+    return Response.json({ veredicto })
+  } catch (error) {
+    return Response.json({ error: error.message }, { status: 500 })
+  }
 }
