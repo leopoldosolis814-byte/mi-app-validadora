@@ -14,22 +14,22 @@ export default function Home() {
   const [idea, setIdea] = useState('')
   const [veredicto, setVeredicto] = useState('')
   const [cargando, setCargando] = useState(false)
-  const [fuentes, setFuentes] = useState<string[]>([])
+  const [fuentes, setFuentes] = useState([])
   const [postsAnalizados, setPostsAnalizados] = useState(0)
-  const [sugerencias, setSugerencias] = useState<any[]>([])
+  const [sugerencias, setSugerencias] = useState([])
   const [cargandoSugerencias, setCargandoSugerencias] = useState(false)
   const [indiceImagen, setIndiceImagen] = useState(0)
-  const [prevIndice, setPrevIndice] = useState<number | null>(null)
+  const [prevIndice, setPrevIndice] = useState(null)
   const [transitioning, setTransitioning] = useState(false)
   const [tituloVisible, setTituloVisible] = useState(false)
-  const intervalRef = useRef<NodeJS.Timeout | null>(null)
+  const intervalRef = useRef(null)
 
   useEffect(() => {
     const t = setTimeout(() => setTituloVisible(true), 300)
     return () => clearTimeout(t)
   }, [])
 
-  const goToSlide = (next: number) => {
+  const goToSlide = (next) => {
     if (transitioning) return
     setTransitioning(true)
     setPrevIndice(indiceImagen)
@@ -62,7 +62,7 @@ export default function Home() {
     }, 6000)
   }
 
-  const handleGoTo = (i: number) => {
+  const handleGoTo = (i) => {
     if (i === indiceImagen || transitioning) return
     goToSlide(i)
     resetInterval()
@@ -113,7 +113,7 @@ export default function Home() {
       alert('Error de conexión')
     }
     setCargandoSugerencias(false)
-  }
+        }
   return (
     <>
       <style>{`
@@ -347,4 +347,4 @@ export default function Home() {
       </main>
     </>
   )
-                              }
+              }
