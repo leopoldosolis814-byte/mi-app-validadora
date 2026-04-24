@@ -22,6 +22,9 @@ export default function Home() {
   const [prevIndice, setPrevIndice] = useState(null)
   const [transitioning, setTransitioning] = useState(false)
   const [tituloVisible, setTituloVisible] = useState(false)
+  const [email, setEmail] = useState('')
+  const [emailEnviado, setEmailEnviado] = useState(false)
+  const [enviandoEmail, setEnviandoEmail] = useState(false)
   const intervalRef = useRef(null)
 
   useEffect(() => {
@@ -74,6 +77,8 @@ export default function Home() {
     setVeredicto('')
     setFuentes([])
     setPostsAnalizados(0)
+    setEmailEnviado(false)
+    setEmail('')
     try {
       const res = await fetch('/api/analizar', {
         method: 'POST',
@@ -113,7 +118,25 @@ export default function Home() {
       alert('Error de conexión')
     }
     setCargandoSugerencias(false)
-        }
+  }
+
+  const enviarEmail = async () => {
+    if (!email.trim() || !email.includes('@')) return
+    setEnviandoEmail(true)
+    try {
+      const res = await fetch('https://formspree.io/f/mojypkzp', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, idea, veredicto })
+      })
+      if (res.ok) {
+        setEmailEnviado(true)
+      }
+    } catch {
+      alert('Error al enviar email')
+    }
+    setEnviandoEmail(false)
+  }
   return (
     <>
       <style>{`
@@ -174,8 +197,8 @@ export default function Home() {
         .t-bar { display: flex; align-items: center; justify-content: center; gap: 8px; margin-top: 14px; }
         .t-seg { height: 3px; border-radius: 99px; opacity: 0; transform: scaleX(0); transform-origin: left center; transition: transform 0.6s cubic-bezier(0.22,1,0.36,1), opacity 0.4s ease; }
         .t-vis .t-seg { opacity: 1; transform: scaleX(1); }
-        .t-vis .t-seg:nth-child(1) { background: var(--coral);  width: 48px; transition-delay: 0.55s; }
-        .t-vis .t-seg:nth-child(2) { background: var(--mint);   width: 20px; transition-delay: 0.65s; }
+        .t-vis .t-seg:nth-child(1) { background: var(--coral); width: 48px; transition-delay: 0.55s; }
+        .t-vis .t-seg:nth-child(2) { background: var(--mint); width: 20px; transition-delay: 0.65s; }
         .t-vis .t-seg:nth-child(3) { background: var(--violet); width: 12px; transition-delay: 0.72s; }
         .t-sub { font-size: 14px; font-weight: 300; letter-spacing: 0.04em; line-height: 1.7; color: var(--text-2); margin-top: 18px; opacity: 0; transform: translateY(10px); transition: opacity 0.7s ease, transform 0.7s ease; transition-delay: 0.85s; }
         .t-vis .t-sub { opacity: 1; transform: translateY(0); }
@@ -191,6 +214,10 @@ export default function Home() {
         .inp::placeholder { color: var(--text-3); font-style: italic; }
         .inp:focus { border-color: rgba(63,255,194,0.28); box-shadow: 0 0 0 3px rgba(63,255,194,0.06); }
 
+        .inp-email { width: 100%; background: rgba(8,13,20,0.7); border: 1px solid var(--border); border-radius: 10px; padding: 12px 16px; color: var(--text-1); font-family: 'Outfit', sans-serif; font-size: 14px; font-weight: 300; outline: none; transition: border-color 0.3s, box-shadow 0.3s; }
+        .inp-email::placeholder { color: var(--text-3); font-style: italic; }
+        .inp-email:focus { border-color: rgba(181,123,255,0.28); box-shadow: 0 0 0 3px rgba(181,123,255,0.06); }
+
         .btn-ghost { width: 100%; margin-top: 10px; background: transparent; border: 1px solid var(--border); border-radius: 8px; color: var(--text-2); font-family: 'Outfit', sans-serif; font-size: 12px; font-weight: 500; letter-spacing: 0.07em; text-transform: uppercase; padding: 10px 16px; cursor: pointer; transition: all 0.25s ease; display: flex; align-items: center; justify-content: center; gap: 8px; }
         .btn-ghost:hover:not(:disabled) { border-color: rgba(181,123,255,0.32); color: var(--violet); background: rgba(181,123,255,0.05); }
         .btn-ghost:disabled { opacity: 0.35; cursor: not-allowed; }
@@ -203,6 +230,10 @@ export default function Home() {
         .btn-cta:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 10px 36px rgba(255,95,75,0.38); }
         .btn-cta:active:not(:disabled) { transform: translateY(0); }
         .btn-cta:disabled { opacity: 0.38; cursor: not-allowed; box-shadow: none; }
+
+        .btn-violet { width: 100%; margin-top: 10px; background: linear-gradient(135deg, var(--violet-dim) 0%, var(--violet) 100%); border: none; border-radius: 10px; color: #fff; font-family: 'Outfit', sans-serif; font-size: 13px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; padding: 13px 24px; cursor: pointer; transition: all 0.3s ease; box-shadow: 0 4px 20px rgba(181,123,255,0.25); }
+        .btn-violet:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 8px 28px rgba(181,123,255,0.38); }
+        .btn-violet:disabled { opacity: 0.38; cursor: not-allowed; }
 
         .sug-card { background: rgba(8,13,20,0.55); border: 1px solid var(--border); border-radius: 10px; padding: 14px 16px; cursor: pointer; text-align: left; width: 100%; transition: all 0.25s ease; position: relative; overflow: hidden; }
         .sug-card::before { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 3px; background: linear-gradient(180deg, var(--coral), var(--violet)); border-radius: 3px 0 0 3px; opacity: 0; transition: opacity 0.25s; }
@@ -220,6 +251,11 @@ export default function Home() {
         .res-text { font-size: 13px; font-weight: 300; color: #B8C8E0; line-height: 1.85; letter-spacing: 0.01em; white-space: pre-wrap; margin-top: 14px; font-family: 'Outfit', sans-serif; }
         .div-line { height: 1px; background: linear-gradient(90deg, transparent, var(--border), transparent); margin: 16px 0; }
         .src-tag { font-size: 10px; letter-spacing: 0.06em; color: var(--text-3); background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.06); border-radius: 6px; padding: 3px 8px; font-weight: 400; }
+
+        .email-box { margin-top: 16px; background: rgba(181,123,255,0.05); border: 1px solid rgba(181,123,255,0.15); border-radius: 12px; padding: 18px; }
+        .email-titulo { font-size: 13px; font-weight: 500; color: var(--text-1); margin-bottom: 4px; }
+        .email-sub { font-size: 11px; color: var(--text-2); margin-bottom: 12px; }
+        .email-ok { text-align: center; padding: 12px; font-size: 13px; color: var(--mint); font-weight: 500; }
 
         .dot { height: 3px; border-radius: 99px; cursor: pointer; border: none; background: var(--text-3); transition: all 0.4s cubic-bezier(0.22,1,0.36,1); }
         .dot.on { background: linear-gradient(90deg, var(--coral), var(--violet)); box-shadow: 0 0 10px rgba(255,95,75,0.4); }
@@ -329,6 +365,27 @@ export default function Home() {
                       </div>
                     </>
                   )}
+
+                  {!emailEnviado ? (
+                    <div className="email-box">
+                      <p className="email-titulo">¿Querés recibir más análisis como este?</p>
+                      <p className="email-sub">Te avisamos cuando tengamos nuevas funciones y herramientas.</p>
+                      <input
+                        type="email"
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                        placeholder="tu@email.com"
+                        className="inp-email"
+                      />
+                      <button onClick={enviarEmail} disabled={enviandoEmail || !email.includes('@')} className="btn-violet">
+                        {enviandoEmail ? '◌ Enviando...' : '→ Quiero estar al tanto'}
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="email-box">
+                      <p className="email-ok">✦ ¡Perfecto! Te escribimos pronto.</p>
+                    </div>
+                  )}
                 </div>
               )}
             </div>
@@ -347,4 +404,4 @@ export default function Home() {
       </main>
     </>
   )
-              }
+             }
